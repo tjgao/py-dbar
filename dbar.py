@@ -2,6 +2,7 @@
 import asyncio
 import signal
 import os
+import argparse
 
 fields_cfg = [
     {
@@ -58,7 +59,12 @@ class DWMStatusBar:
             return NOT_AVAILABLE
 
     async def _refresh(self):
-        res = "  ".join([o.get('name', '').strip() + o.get("output", NOT_AVAILABLE).strip() for o in self.fields])
+        res = "  ".join(
+            [
+                o.get("name", "").strip() + o.get("output", NOT_AVAILABLE).strip()
+                for o in self.fields
+            ]
+        )
         cmd = f'xsetroot -name "{res}"'
         await self._run(cmd)
 
@@ -78,14 +84,23 @@ class DWMStatusBar:
 
 
 if __name__ == "__main__":
-    try:
-        os.remove(PID_FILE)
-    except:
-        pass
-
+    parser = argparse.ArgumentParser(description="dbar")
+    parser.add_argument(
+        "--pid",
+        dest="pid",
+        action="store_true",
+        default=False,
+        help="If specified, the program will generate a pid file under /tmp",
+    )
+    args = parser.parse_args()
     pid = os.getpid()
-    with open(PID_FILE, "w") as f:
-        f.write(str(pid))
+    if args.pid:
+        try:
+            with open(PID_FILE, "w") as f:
+                f.truncate()
+                f.write(str(pid))
+        except:
+            pass
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
