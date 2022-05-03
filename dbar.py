@@ -58,7 +58,7 @@ class DWMStatusBar:
             return NOT_AVAILABLE
 
     async def _refresh(self):
-        res = "  ".join([o.get("output", NOT_AVAILABLE).strip() for o in self.fields])
+        res = "  ".join([o.get('name', '').strip() + o.get("output", NOT_AVAILABLE).strip() for o in self.fields])
         cmd = f'xsetroot -name "{res}"'
         await self._run(cmd)
 
