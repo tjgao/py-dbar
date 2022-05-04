@@ -43,8 +43,8 @@ class DWMStatusBar:
                 await self._refresh()
                 if not long_running:
                     break
-                if field["interval"] > 0:
-                    await asyncio.sleep(field["interval"])
+                assert field["interval"] > 0
+                await asyncio.sleep(field["interval"])
 
         return task
 
@@ -61,7 +61,7 @@ class DWMStatusBar:
     async def _refresh(self):
         res = "  ".join(
             [
-                o.get("name", "").strip() + o.get("output", NOT_AVAILABLE).strip()
+                o.get("name", "") + o.get("output", NOT_AVAILABLE).strip()
                 for o in self.fields
             ]
         )
