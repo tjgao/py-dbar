@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 import asyncio
 import signal
-import os
+import time
+import os, sys
 import argparse
+import subprocess
 
 fields_cfg = [
     {
-        "name": "﬙",
+        "name": "﬙  ",
         "cmd": "free -h | awk '/^Mem/ { print $3\"/\"$2 }' | sed s/i//g",
         "interval": 30,
         "signal": 0,
@@ -23,12 +25,24 @@ class DWMStatusBar:
     def __init__(self, cfg, loop):
         self.fields = cfg
         self.loop = loop
+        self.ppid = None
         self._prepare()
 
     def _prepare(self):
+        attempt = 5
+        while not self.ppid and attempt > 0:
+            try:
+                self.ppid = int(subprocess.check_output('pgrep dwm', shell=True))
+            except:
+                atempt -= 1
+                time.sleep(1)
+                continue
+        if not self.ppid:
+            sys.exit()
+
         for f in self.fields:
             if f["interval"] > 0:
-                f["longrun"] = self._make_task(f, True)
+                f["longrunning"] = self._make_task(f, True)
             if f["signal"] != 0 or f["interval"] <= 0:
                 f["oneshot"] = self._make_task(f, False)
                 if f["signal"] != 0:
@@ -68,19 +82,26 @@ class DWMStatusBar:
         cmd = f'xsetroot -name "{res}"'
         await self._run(cmd)
 
+
+    async def check_dwm(self):
+        # monitor dwm process id, if dwm is not running, exit
+        while True:
+            try:
+                os.kill(self.ppid, 0)
+            except OSError:
+                sys.exit()
+            await asyncio.sleep(1)
+
+
     async def main(self):
-        tasks = []
+        tasks = [asyncio.create_task(self.check_dwm())]
         for f in self.fields:
-            if f.get("longrun"):
-                tasks.append(asyncio.create_task(f["longrun"]()))
+            if f.get("longrunning"):
+                tasks.append(asyncio.create_task(f["longrunning"]()))
             elif f.get("oneshot"):
                 tasks.append(asyncio.create_task(f["oneshot"]()))
 
         await asyncio.gather(*tasks)
-        # Just in case there is no long running task, we still need to
-        # stay around, because we may receive signals from users
-        while True:
-            await asyncio.sleep(1)
 
 
 if __name__ == "__main__":
