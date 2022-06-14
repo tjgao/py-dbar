@@ -170,6 +170,7 @@ class AudioControlTask(Task):
             fgcolor2="#222222",
             bgcolor2="#aaff88",
         )
+        self.attempts = 3
 
     def _format(self, out, width):
         return out.center(width) if width else out
@@ -195,10 +196,21 @@ class AudioControlTask(Task):
             return NOT_AVAILABLE
 
     async def work_meat(self):
-        vol, _ = await async_run(
-            r"amixer get Master | tail -n1 | sed -r 's/.*\[(.*)%\].*/\1/'"
-        )
-        self._update(" " + vol.strip())
+        code = 1
+        while code != 0:
+            vol, code = await async_run(
+                r"amixer get Master | tail -n1 | sed -r 's/.*\[(.*)%\].*/\1/'"
+            )
+            if code == 0:
+                self.attempts = 3
+                self._update(" " + vol.strip())
+                break
+            if self.attempts > 0:
+                self.attempts -= 1
+                await asyncio.sleep(1)
+            else:
+                self._update(" " + NOT_AVAILABLE)
+                break
 
 
 class NetworkTask(Task):
