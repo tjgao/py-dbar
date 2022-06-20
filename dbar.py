@@ -170,7 +170,7 @@ class AudioControlTask(Task):
             fgcolor2="#222222",
             bgcolor2="#aaff88",
         )
-        self.attempts = 3
+        self.attempts = 10
 
     def _format(self, out, width):
         return out.center(width) if width else out
@@ -202,7 +202,7 @@ class AudioControlTask(Task):
                 r"amixer get Master | tail -n1 | sed -r 's/.*\[(.*)%\].*/\1/'"
             )
             if code == 0:
-                self.attempts = 3
+                self.attempts = 10
                 self._update(" " + vol.strip())
                 break
             if self.attempts > 0:
