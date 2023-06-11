@@ -5,11 +5,14 @@ import time
 import os, sys
 import argparse
 import subprocess
+import logging
+
+logger = logging.getLogger('Mydwmbar')
 
 NOT_AVAILABLE = "ERROR N/A"
 PID_FILE = "/tmp/_dwm_dbar.pid"
 
-DEBUG = False
+level = logging.INFO
 
 loop = asyncio.new_event_loop()
 
@@ -26,8 +29,8 @@ async def async_run(cmd):
     pp = asyncio.subprocess.PIPE
     proc = await asyncio.create_subprocess_shell(cmd, stdout=pp, stderr=pp)
     out, err = await proc.communicate()
-    if proc.returncode != 0 and DEBUG:
-        print(f'Command: "{cmd}" failed, {err}', file=sys.stderr)
+    if proc.returncode != 0:
+        logger.error(f'Command: "{cmd}" failed, {err}')
     return out.decode(), proc.returncode
 
 
@@ -367,16 +370,33 @@ if __name__ == "__main__":
         default=False,
         help="If specified, the program will generate a pid file under /tmp",
     )
+    parser.add_argument(
+            "--logfile",
+            dest="logfile",
+            default="",
+            help="If specified, logs will be output to the file, otherwise just be shown in stdout")
+
     args = parser.parse_args()
     pid = os.getpid()
+    logging.basicConfig(
+            filename=args.logfile,
+            #format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+            format='%(asctime)s,%(msecs)d %(levelname)s %(message)s',
+            datefmt='%H:%M:%S',
+            level=level
+            )
+
     if args.pid:
         try:
             with open(PID_FILE, "w") as f:
                 f.truncate()
                 f.write(str(pid))
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Exception: {e}")
 
-    asyncio.set_event_loop(loop)
-    bar = DBar()
-    loop.run_until_complete(bar.run())
+    try:
+        asyncio.set_event_loop(loop)
+        bar = DBar()
+        loop.run_until_complete(bar.run())
+    except Exception as e:
+        logger.error(f"Main even loop exception: {e}")
