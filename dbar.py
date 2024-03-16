@@ -7,7 +7,7 @@ import argparse
 import subprocess
 import logging
 
-logger = logging.getLogger('Mydwmbar')
+logger = logging.getLogger("Mydwmbar")
 
 NOT_AVAILABLE = "ERROR N/A"
 PID_FILE = "/tmp/_dwm_dbar.pid"
@@ -30,7 +30,7 @@ async def async_run(cmd):
     proc = await asyncio.create_subprocess_shell(cmd, stdout=pp, stderr=pp)
     out, err = await proc.communicate()
     if proc.returncode != 0:
-        logger.error(f'Command: "{cmd}" failed, {err}')
+        logger.debug(f'Command: "{cmd}" failed, {err}')
     return out.decode(), proc.returncode
 
 
@@ -185,11 +185,11 @@ class AudioControlTask(Task):
             head = ""
             if v == 0:
                 head = self.icon[0] + " "
-            elif v < 33:
+            elif v < 20:
                 head = self.icon[1] + " "
-            elif v < 66:
+            elif v < 45:
                 head = self.icon[2] + " "
-            elif v < 100:
+            elif v < 90:
                 head = self.icon[3] + " "
             else:
                 head = self.icon[4] + " "
@@ -264,7 +264,7 @@ class NetworkTask(Task):
         # first time run, just return
         if self.last_read == 0:
             self.last_read = tm
-            return ""
+            return
 
         rx_speed = "" + human_format(rx_diff / (tm - self.last_read)) + "/S"
         tx_speed = "" + human_format(tx_diff / (tm - self.last_read)) + "/S"
@@ -371,20 +371,21 @@ if __name__ == "__main__":
         help="If specified, the program will generate a pid file under /tmp",
     )
     parser.add_argument(
-            "--logfile",
-            dest="logfile",
-            default="",
-            help="If specified, logs will be output to the file, otherwise just be shown in stdout")
+        "--logfile",
+        dest="logfile",
+        default="",
+        help="If specified, logs will be output to the file, otherwise just be shown in stdout",
+    )
 
     args = parser.parse_args()
     pid = os.getpid()
     logging.basicConfig(
-            filename=args.logfile,
-            #format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-            format='%(asctime)s,%(msecs)d %(levelname)s %(message)s',
-            datefmt='%H:%M:%S',
-            level=level
-            )
+        filename=args.logfile,
+        # format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+        format="%(asctime)s,%(msecs)d %(levelname)s %(message)s",
+        datefmt="%H:%M:%S",
+        level=level,
+    )
 
     if args.pid:
         try:
