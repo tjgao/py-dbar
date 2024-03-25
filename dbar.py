@@ -117,10 +117,14 @@ class MemTask(Task):
             interval=30,
             width=11,
             icon=[" ﬙  "],
-            fgcolor="#222222",
-            bgcolor="#8844ff",
-            fgcolor2="#222222",
-            bgcolor2="#aa88ff",
+            fgcolor="#bbbbbb",
+            bgcolor="#111111",
+            fgcolor2="#bbbbbb",
+            bgcolor2="#222222",
+            # fgcolor="#222222",
+            # bgcolor="#8844ff",
+            # fgcolor2="#222222",
+            # bgcolor2="#aa88ff",
         )
 
     async def work_meat(self):
@@ -136,10 +140,14 @@ class CPUTask(Task):
             interval=3,
             width=12,
             icon=["   "],
-            fgcolor="#222222",
-            bgcolor="#d6482f",
-            fgcolor2="#222222",
-            bgcolor2="#e87c68",
+            fgcolor="#bbbbbb",
+            bgcolor="#111111",
+            fgcolor2="#bbbbbb",
+            bgcolor2="#222222",
+            # fgcolor="#222222",
+            # bgcolor="#d6482f",
+            # fgcolor2="#222222",
+            # bgcolor2="#e87c68",
         )
         self.prev_busy = 0
         self.prev_total = 0
@@ -168,10 +176,14 @@ class AudioControlTask(Task):
             signal=signal.SIGRTMIN + 10,
             width=6,
             icon=[" ﱝ", " 奄", " 奔", " 墳", " "],
-            fgcolor="#222222",
-            bgcolor="#77ff33",
-            fgcolor2="#222222",
-            bgcolor2="#aaff88",
+            fgcolor="#bbbbbb",
+            bgcolor="#111111",
+            fgcolor2="#bbbbbb",
+            bgcolor2="#222222",
+            # fgcolor="#222222",
+            # bgcolor="#77ff33",
+            # fgcolor2="#222222",
+            # bgcolor2="#aaff88",
         )
         self.attempts = 10
 
@@ -277,10 +289,14 @@ class EthernetTask(NetworkTask):
         super().__init__(
             "ethernet",
             ["   "],
-            fgcolor="#222222",
-            bgcolor="#e0c516",
-            fgcolor2="#222222",
-            bgcolor2="#f2e383",
+            fgcolor="#bbbbbb",
+            bgcolor="#111111",
+            fgcolor2="#bbbbbb",
+            bgcolor2="#222222",
+            # fgcolor="#222222",
+            # bgcolor="#e0c516",
+            # fgcolor2="#222222",
+            # bgcolor2="#f2e383",
         )
 
 
@@ -289,10 +305,14 @@ class WifiTask(NetworkTask):
         super().__init__(
             "wifi",
             [" 直  "],
-            fgcolor="#222222",
-            bgcolor="#4441f2",
-            fgcolor2="#222222",
-            bgcolor2="#8886f0",
+            fgcolor="#bbbbbb",
+            bgcolor="#111111",
+            fgcolor2="#bbbbbb",
+            bgcolor2="#222222",
+            # fgcolor="#222222",
+            # bgcolor="#4441f2",
+            # fgcolor2="#222222",
+            # bgcolor2="#8886f0",
         )
 
 
@@ -302,10 +322,14 @@ class DateTask(Task):
             interval=interval,
             icon=icon,
             width=width,
-            fgcolor="#222222",
-            bgcolor="#4488ff",
-            fgcolor2="#222222",
-            bgcolor2="#88aaff",
+            fgcolor="#bbbbbb",
+            bgcolor="#111111",
+            fgcolor2="#bbbbbb",
+            bgcolor2="#222222",
+            # fgcolor="#222222",
+            # bgcolor="#4488ff",
+            # fgcolor2="#222222",
+            # bgcolor2="#88aaff",
         )
 
     async def work_meat(self):
