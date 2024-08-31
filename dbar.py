@@ -6,6 +6,7 @@ import os, sys
 import argparse
 import subprocess
 import logging
+import traceback
 
 logger = logging.getLogger("Mydwmbar")
 
@@ -60,10 +61,10 @@ class Task:
         self.bgcolor2 = bgcolor2
         self.cb = None
 
-    def _format(self, out, width):
+    def format(self, out, width):
         return out.ljust(width) if width else out
 
-    def _beautify(self, out):
+    def beautify(self, out):
         head = ""
         if self.icon:
             fg = f"^c{self.fgcolor}^" if self.fgcolor else ""
@@ -75,12 +76,12 @@ class Task:
         bg2 = f"^b{self.bgcolor2}^" if self.bgcolor2 else ""
         return f"{head}{fg2}{bg2}{out}^d^"
 
-    def _update(self, out):
-        out = self._format(out, self.width)
+    def update(self, out):
+        out = self.format(out, self.width)
         if out != self.raw_output:
             self.raw_output = out
             self.dirty = True
-            self.output = self._beautify(out)
+            self.output = self.beautify(out)
             if self.cb:
                 asyncio.create_task(self.cb())
 
@@ -131,7 +132,7 @@ class MemTask(Task):
         mem, _ = await async_run(
             "free -h | awk '/^Mem/ { print $3\"/\"$2 }' | sed s/i//g"
         )
-        self._update(" " + mem.strip())
+        self.update(" " + mem.strip())
 
 
 class CPUTask(Task):
@@ -166,7 +167,7 @@ class CPUTask(Task):
         )
         if code != 0:
             thermal = "N/A"
-        self._update(" " + cpu + " " + thermal.strip())
+        self.update(" " + cpu + " " + thermal.strip())
 
 
 class AudioControlTask(Task):
@@ -187,10 +188,10 @@ class AudioControlTask(Task):
         )
         self.attempts = 10
 
-    def _format(self, out, width):
+    def format(self, out, width):
         return out.center(width) if width else out
 
-    def _beautify(self, out):
+    def beautify(self, out):
         _ = out
         try:
             v = int(self.raw_output.strip())
@@ -205,7 +206,7 @@ class AudioControlTask(Task):
                 head = self.icon[3] + " "
             else:
                 head = self.icon[4] + " "
-            body = self._format(str(v) + "%", self.width)
+            body = self.format(str(v) + "%", self.width)
             return f"^c{self.fgcolor}^^b{self.bgcolor}^{head} ^c{self.fgcolor2}^^b{self.bgcolor2}^{body}^d^"
         except:
             return NOT_AVAILABLE
@@ -218,13 +219,13 @@ class AudioControlTask(Task):
             )
             if code == 0:
                 self.attempts = 10
-                self._update(" " + vol.strip())
+                self.update(" " + vol.strip())
                 break
             if self.attempts > 0:
                 self.attempts -= 1
                 await asyncio.sleep(1)
             else:
-                self._update(" " + NOT_AVAILABLE)
+                self.update(" " + NOT_AVAILABLE)
                 break
 
 
@@ -233,7 +234,7 @@ class NetworkTask(Task):
         super().__init__(
             interval=3,
             signal=0,
-            width=22,
+            width=20,
             icon=icon,
             fgcolor=fgcolor,
             bgcolor=bgcolor,
@@ -246,12 +247,12 @@ class NetworkTask(Task):
         self.tx = 0
         self.last_read = 0
 
-    def _beautify(self, out):
+    def beautify(self, out):
         if not self.available:
             return ""
-        return super()._beautify(out)
+        return super().beautify(out)
 
-    def _format(self, out, width):
+    def format(self, out, width):
         return out.center(width) if width else out
 
     async def work_meat(self):
@@ -281,7 +282,7 @@ class NetworkTask(Task):
         rx_speed = "" + human_format(rx_diff / (tm - self.last_read)) + "/S"
         tx_speed = "" + human_format(tx_diff / (tm - self.last_read)) + "/S"
         self.last_read = tm
-        self._update(" " + rx_speed + " " + tx_speed)
+        self.update(" " + rx_speed + " " + tx_speed)
 
 
 class EthernetTask(NetworkTask):
@@ -334,7 +335,58 @@ class DateTask(Task):
 
     async def work_meat(self):
         time_info, _ = await async_run('date "+%a %b %d %I:%M%p"')
-        self._update(" " + time_info.strip())
+        self.update(" " + time_info.strip())
+
+
+class DPMSTask(Task):
+    def __init__(self):
+        super().__init__(
+            icon=[" DPMS "],
+            width=4,
+            signal=signal.SIGRTMIN + 11,
+            fgcolor="#bbbbbb",
+            bgcolor="#111111",
+            fgcolor2="#bbbbbb",
+            bgcolor2="#222222",
+        )
+        self.attempts = 10
+        self.first_run = True
+
+    def format(self, out, width):
+        return out.center(width) if width else out
+
+    async def work_meat(self):
+        while True:
+            if self.attempts == 0:
+                self.update(" " + "N/A")
+                self.attempts = 10
+                break
+            self.attempts -= 1
+            enabled = None
+            try:
+                result, code = await async_run(r"xset -q | grep 'DPMS is'")
+                if code != 0:
+                    await asyncio.sleep(1)
+                    continue
+                else:
+                    enabled = result.split()[2].strip() == "Enabled"
+                    self.attempts = 10
+            except Exception as e:
+                logger.error(
+                    f"DPMS task error: {type(e).__name__} {e} \n{traceback.format_exc()}"
+                )
+                await asyncio.sleep(1)
+                continue
+            code = 0
+            if self.first_run:
+                self.first_run = False
+            else:
+                _, code = await async_run(f"xset {'-' if enabled else '+'}dpms")
+            if code == 0:
+                self.update(" " + "OFF" if enabled else "ON")
+            else:
+                self.update(" " + "ERR")
+            break
 
 
 class DBar:
@@ -345,6 +397,7 @@ class DBar:
             sys.exit(1)
 
         self.tasks = [
+            DPMSTask(),
             WifiTask(),
             EthernetTask(),
             CPUTask(),
@@ -353,7 +406,7 @@ class DBar:
             DateTask(),
         ]
         for t in self.tasks:
-            t.set_async_callback(self._update)
+            t.set_async_callback(self.update)
 
     async def _check_dwm(self):
         # monitor dwm process id, if dwm is not running, exit
@@ -364,7 +417,7 @@ class DBar:
                 sys.exit()
             await asyncio.sleep(1)
 
-    async def _update(self):
+    async def update(self):
         status, dirty = self.tasks[0].get_output()
         for t in self.tasks[1:]:
             s, b = t.get_output()
@@ -405,9 +458,7 @@ if __name__ == "__main__":
     pid = os.getpid()
     logging.basicConfig(
         filename=args.logfile,
-        # format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-        format="%(asctime)s,%(msecs)d %(levelname)s %(message)s",
-        datefmt="%H:%M:%S",
+        format="%(asctime)s %(levelname)s %(message)s",
         level=level,
     )
 
@@ -424,4 +475,4 @@ if __name__ == "__main__":
         bar = DBar()
         loop.run_until_complete(bar.run())
     except Exception as e:
-        logger.error(f"Main even loop exception: {e}")
+        logger.error(f"Main even loop exception: {e},\n{traceback.format_exc()}")
