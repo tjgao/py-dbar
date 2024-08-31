@@ -381,7 +381,9 @@ class DPMSTask(Task):
             if self.first_run:
                 self.first_run = False
             else:
-                _, code = await async_run(f"xset {'-' if enabled else '+'}dpms")
+                _, code = await async_run(
+                    f"xset {'-' if enabled else '+'}dpms s {'off' if enabled else 'on'} s {'noblank' if enabled else 'blank'}"
+                )
             if code == 0:
                 self.update(" " + "OFF" if enabled else "ON")
             else:
